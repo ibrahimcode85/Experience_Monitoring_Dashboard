@@ -1,0 +1,19 @@
+# Development dependencies
+# black==24.4.2
+
+# Project dependencies
+pandas==2.2.2
+numpy==2.0.0
+openpyxl==3.1.5
+# datetime
+
+# Installer
+# pyinstaller
+
+# Dashboard
+dash
+
+
+# Enable Jupyter Notebook - if needed
+#jupyter
+#ipykernel
