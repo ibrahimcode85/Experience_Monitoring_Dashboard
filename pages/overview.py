@@ -457,31 +457,54 @@ layout = html.Div(
         # Header section
         html.Div(
             [
-                html.Div("Co.", className="logo"),
                 html.Div(
                     [
+                        html.Div("Co.", className="logo"),
                         html.Div(
-                            "Claim Experience Study - Medical Products",
-                            className="title-text",
+                            [
+                                html.Div(
+                                    "Experience Monitoring Dashboard",
+                                    className="title-dashboard",
+                                ),
+                                html.Div(
+                                    "Actuarial Department",
+                                    className="title-dashboard secondary",
+                                ),
+                            ],
+                            className="title-dashboard-container",
                         ),
-                        html.Div("Q1 2024", className="title-date"),
                     ],
-                    className="title",
+                    className="header-container-left",
+                ),
+                html.Div(
+                    html.Ul(
+                        [
+                            html.Li(
+                                dcc.Link("Home", href="/product"),
+                                className="menu-item",
+                            ),
+                            html.Li(
+                                dcc.Link("New Business", href="/product"),
+                                className="menu-item",
+                            ),
+                            html.Li(
+                                dcc.Link("Mortality", href="/product"),
+                                className="menu-item",
+                            ),
+                            html.Li(
+                                dcc.Link("Morbidity", href="/"),
+                                className="selected-menu-item",
+                            ),
+                            html.Li(
+                                dcc.Link("Lapse", href="/product"),
+                                className="menu-item",
+                            ),
+                        ]
+                    ),
+                    className="menu",
                 ),
             ],
             className="header",
-        ),
-        # Menu section
-        html.Div(
-            html.Ul(
-                [
-                    html.Li(
-                        dcc.Link("Overview", href="/"), className="selected-menu-item"
-                    ),
-                    html.Li(dcc.Link("Product", href="/product")),
-                ]
-            ),
-            className="menu",
         ),
         # Content section
         html.Div(
