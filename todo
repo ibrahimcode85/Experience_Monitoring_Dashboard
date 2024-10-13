@@ -1,0 +1,6 @@
+~~[done]1. Fixed the loss ratio data card: Highlight LR, cont and claim as suppliment~~
+~~[done - explored]2. Add indicator up/down for loss ratio.~~
+~~[done]3. rename the class to data-card, data-card-lossRatio~~
+~~[not doable based on github request] 4. fixed the python script to read css variable eg --font-family. not sure why it dosent apply~~
+
+~~1. Explore adding box plot diagram, with current value marker.~~ 2. Add product selection dropdown (instead of using ) 3. Add bullet chart for the main loss ratio 4. Add nav bar menu as header 5. cleanup the code. 6. Add indicator if loss ratio is breached - using javascript
