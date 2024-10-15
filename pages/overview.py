@@ -150,7 +150,7 @@ def create_bullet(value):
     # Create a bullet chart using a bar to represent the current value
     fig = go.Figure(
         go.Indicator(
-            mode="gauge",
+            mode="gauge+delta",
             value=current_value,
             gauge={
                 "shape": "bullet",
@@ -186,7 +186,7 @@ def create_bullet(value):
                     },
                 ],
             },
-            domain={"x": [0, 1], "y": [0.4, 1]},
+            domain={"x": [0, 1], "y": [0.6, 1]},  # use y value to adjust height
             number={
                 "suffix": "%",
                 "font": {
@@ -194,6 +194,17 @@ def create_bullet(value):
                     "color": "white",
                     "family": "Arial",
                     "weight": "bold",
+                },
+            },
+            delta={
+                "reference": 90,
+                "suffix": "%",
+                "valueformat": ".1f",
+                "position": "right",
+                "increasing": {"color": "red"},
+                "decreasing": {"color": "green"},
+                "font": {
+                    "size": 16,
                 },
             },
         )
@@ -213,10 +224,13 @@ def create_bullet(value):
 def create_box(val):
     # Generate random data with exponential distribution
     np.random.seed(42)
-    data = np.random.exponential(scale=val, size=20)
+    data = np.random.exponential(scale=val, size=30)
 
     # Add jitter to y-axis for better visibility
     jitter = np.random.normal(0, 0.1, len(data))
+
+    # Rank the input value within the generated data
+    rank_percentile = (np.sum(data < val) / len(data)) * 100
 
     # Calculate quartiles
     q1 = np.percentile(data, 25)
@@ -233,7 +247,7 @@ def create_box(val):
             y=jitter,
             mode="markers",
             marker=dict(color="lightgreen", size=5),
-            name="Data Points",
+            name="Historical Value",
         )
     )
 
@@ -244,7 +258,7 @@ def create_box(val):
             y=[0],
             mode="markers",
             marker=dict(color="red", size=10),
-            name="Highlighted Value",
+            name="Current Value",
         )
     )
 
@@ -274,10 +288,21 @@ def create_box(val):
         paper_bgcolor="rgb(35, 36, 72)",
         plot_bgcolor="rgb(35, 36, 72)",
     )
-    return fig
+
+    # Return the chart and the rank percentile as a message
+    percentile_text = f"{rank_percentile:.0f}th% observed change"
+
+    return fig, percentile_text
 
 
-def create_delta_card(val, ref, format, direction="income"):
+def create_delta_card(val, ref, format, suffix, direction="income", height="Medium"):
+
+    # Map height labels to numeric values
+    height_map = {"small": 40, "medium": 60, "big": 80}
+
+    # Use the height map to get the correct size, default to "medium"
+    height_used = height_map.get(height.lower(), 60)
+
     delta_card = go.Figure()
 
     if direction == "outgo":
@@ -297,6 +322,7 @@ def create_delta_card(val, ref, format, direction="income"):
             value=val,
             number={
                 "valueformat": format,
+                "suffix": suffix,
                 "font": {
                     "color": "rgb(213, 215, 224)",
                     "weight": "bold",
@@ -307,6 +333,7 @@ def create_delta_card(val, ref, format, direction="income"):
                 "position": "right",
                 "reference": ref,
                 "valueformat": format,
+                "suffix": suffix,
                 **delta_color,
             },
             domain={"x": [0, 1], "y": [0, 1]},
@@ -317,7 +344,7 @@ def create_delta_card(val, ref, format, direction="income"):
         margin=dict(l=0, r=0, t=10, b=10),
         paper_bgcolor="rgb(35, 36, 72)",
         plot_bgcolor="rgb(35, 36, 72)",
-        height=60,
+        height=height_used,
     )
 
     return delta_card
@@ -400,6 +427,14 @@ layout = html.Div(
                                         dcc.Graph(
                                             id="bullet-curr-lossRatio",
                                         ),
+                                        dcc.Graph(
+                                            id="box-curr-lossRatio",
+                                            config={"displayModeBar": False},
+                                        ),
+                                        html.Div(
+                                            id="box-msg-curr-lossRatio",
+                                            className="title box",
+                                        ),
                                     ],
                                     className="data-card-primary",
                                 ),
@@ -414,6 +449,14 @@ layout = html.Div(
                                                     id="curr-claim",
                                                     config={"displayModeBar": False},
                                                 ),
+                                                dcc.Graph(
+                                                    id="box-curr-claim",
+                                                    config={"displayModeBar": False},
+                                                ),
+                                                html.Div(
+                                                    id="box-msg-curr-claim",
+                                                    className="title box",
+                                                ),
                                             ],
                                             className="data-card-primary",
                                         ),
@@ -426,6 +469,14 @@ layout = html.Div(
                                                 dcc.Graph(
                                                     id="curr-cont",
                                                     config={"displayModeBar": False},
+                                                ),
+                                                dcc.Graph(
+                                                    id="box-curr-cont",
+                                                    config={"displayModeBar": False},
+                                                ),
+                                                html.Div(
+                                                    id="box-msg-curr-cont",
+                                                    className="title box",
                                                 ),
                                             ],
                                             className="data-card-primary",
@@ -470,10 +521,6 @@ layout = html.Div(
                                         ),
                                         html.Div(
                                             "Average Claim Size", className="title"
-                                        ),
-                                        dcc.Graph(
-                                            id="overview-box-avg-claim",
-                                            config={"displayModeBar": False},
                                         ),
                                     ],
                                     className="data-card-primary",
@@ -524,13 +571,18 @@ layout = html.Div(
     [
         Output("curr-lossRatio", "figure"),
         Output("bullet-curr-lossRatio", "figure"),
+        Output("box-curr-lossRatio", "figure"),
+        Output("box-msg-curr-lossRatio", "children"),
         Output("curr-cont", "figure"),
+        Output("box-curr-cont", "figure"),
+        Output("box-msg-curr-cont", "children"),
         Output("curr-claim", "figure"),
+        Output("box-curr-claim", "figure"),
+        Output("box-msg-curr-claim", "children"),
         Output("overview-num-lives", "children"),
         Output("overview-avg-claim", "figure"),
         Output("overview-reprice-date", "children"),
         Output("overview-reprice-mnths", "children"),
-        Output("overview-box-avg-claim", "figure"),
         Output("overview-fan-chart", "figure"),
     ],
     [Input("overview-selected-product-dropdown", "value")],
@@ -563,15 +615,20 @@ def update_data(selected_product):
 
     # Delta cards
     ind_current_lossRatio = create_delta_card(
-        current_lossRatio * 100, prev_lossRatio * 100, ".1f", "outgo"
+        current_lossRatio * 100,
+        prev_lossRatio * 100,
+        ".1f",
+        "%",
+        "outgo",
+        "big",
     )
     ind_curr_claim = create_delta_card(
-        current_claim / 1_000_000, prev_claim / 1_000_000, ".1f", "outgo"
+        current_claim / 1_000_000, prev_claim / 1_000_000, ".1f", "m", "outgo"
     )
     ind_curr_cont = create_delta_card(
-        current_cont / 1_000_000, prev_cont / 1_000_000, ".1f", "income"
+        current_cont / 1_000_000, prev_cont / 1_000_000, ".1f", "m", "income"
     )
-    ind_avg_claim = create_delta_card(avg_claim, 200, ".1f")
+    ind_avg_claim = create_delta_card(avg_claim, 200, ".1f", "", "outgo")
 
     # Format values
     formatted_num_lives = f"{int(num_lives):,}"
@@ -599,7 +656,11 @@ def update_data(selected_product):
         )
 
     # box plot
-    box_avg_claim = create_box(avg_claim)
+    box_curr_lossRatio, box_msg_lossRatio = create_box(
+        (current_lossRatio - prev_lossRatio) * 100
+    )
+    box_curr_claim, box_msg_claim = create_box((current_claim - prev_claim) / 1_000_000)
+    box_curr_cont, box_msg_cont = create_box((current_cont - prev_cont) / 1_000_000)
 
     # bullet chart
     bullet_curr_loss_ratio = create_bullet(current_lossRatio)
@@ -610,12 +671,17 @@ def update_data(selected_product):
     return (
         ind_current_lossRatio,
         bullet_curr_loss_ratio,
+        box_curr_lossRatio,
+        box_msg_lossRatio,
         ind_curr_cont,
+        box_curr_cont,
+        box_msg_cont,
         ind_curr_claim,
+        box_curr_claim,
+        box_msg_claim,
         formatted_num_lives,
         ind_avg_claim,
         formatted_reprice_date,
         formatted_reprice_mnths,
-        box_avg_claim,
         fan_chart,
     )
