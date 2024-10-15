@@ -20,6 +20,47 @@ data_table_prev = pd.read_excel("data.xlsx", sheet_name="Sheet3")
 data_chart[["21Q1", "22Q1", "Current"]] = data_chart[["21Q1", "22Q1", "Current"]] * 100
 
 
+def get_data(products="All"):
+
+    product_name = products
+
+    # Filter the data for all medical product
+    data_curr = data_table_curr[data_table_curr["Product"] == product_name]
+    data_prev = data_table_prev[data_table_curr["Product"] == product_name]
+
+    # Loss ratio data
+    current_cont = data_curr.iloc[0]["Net Contribution"]
+    prev_cont = data_prev.iloc[0]["Net Contribution"]
+    current_claim = data_curr.iloc[0]["Incurred Claim"]
+    prev_claim = data_prev.iloc[0]["Incurred Claim"]
+
+    current_lossRatio = current_claim / current_cont
+    prev_lossRatio = prev_claim / prev_cont
+
+    # Other data
+    current_num_lives = data_curr.iloc[0]["Number of Lives"]
+    current_avg_claim = data_curr.iloc[0]["Average Claim Size"]
+    prev_num_lives = data_prev.iloc[0]["Number of Lives"]
+    prev_avg_claim = data_prev.iloc[0]["Average Claim Size"]
+    reprice_date = data_curr.iloc[0]["Last Reprice Date"]
+    reprice_mnths = data_curr.iloc[0]["Mths Since Reprice"]
+
+    return (
+        current_lossRatio,
+        current_claim,
+        current_cont,
+        prev_lossRatio,
+        prev_cont,
+        prev_claim,
+        current_num_lives,
+        current_avg_claim,
+        prev_num_lives,
+        prev_avg_claim,
+        reprice_mnths,
+        reprice_date,
+    )
+
+
 def create_dropdown():
     dropdown = dcc.Dropdown(
         id="overview-selected-product-dropdown",  # Assign an ID to the dropdown
@@ -186,7 +227,7 @@ def create_bullet(value):
                     },
                 ],
             },
-            domain={"x": [0, 1], "y": [0.6, 1]},  # use y value to adjust height
+            domain={"x": [0, 1], "y": [0.4, 1]},  # use y value to adjust height
             number={
                 "suffix": "%",
                 "font": {
@@ -210,7 +251,6 @@ def create_bullet(value):
         )
     )
 
-    # Update layout to add titles and customize appearance
     fig.update_layout(
         paper_bgcolor="rgb(35, 36, 72)",
         plot_bgcolor="rgb(35, 36, 72)",
@@ -223,7 +263,7 @@ def create_bullet(value):
 
 def create_box(val):
     # Generate random data with exponential distribution
-    np.random.seed(42)
+    # np.random.seed(42)
     data = np.random.exponential(scale=val, size=30)
 
     # Add jitter to y-axis for better visibility
@@ -264,7 +304,12 @@ def create_box(val):
 
     # Add vertical lines for 1st quartile, median, and 3rd quartile
     fig.add_shape(
-        type="line", x0=q1, y0=-0.5, x1=q1, y1=0.5, line=dict(color="green", width=2)
+        type="line",
+        x0=q1,
+        y0=-0.5,
+        x1=q1,
+        y1=0.5,
+        line=dict(color="rgb(174, 177, 210)", width=2),
     )  # 1st Quartile
     fig.add_shape(
         type="line",
@@ -272,25 +317,46 @@ def create_box(val):
         y0=-0.5,
         x1=median,
         y1=0.5,
-        line=dict(color="green", width=2),
+        line=dict(color="rgb(174, 177, 210)", width=2),
     )  # Median
     fig.add_shape(
-        type="line", x0=q3, y0=-0.5, x1=q3, y1=0.5, line=dict(color="green", width=2)
+        type="line",
+        x0=q3,
+        y0=-0.5,
+        x1=q3,
+        y1=0.5,
+        line=dict(color="rgb(174, 177, 210)", width=2),
     )  # 3rd Quartile
+
+    # Add annotation for the value point, showing the percentile
+    percentile_text = f"{rank_percentile:.0f}th%"
+    fig.add_annotation(
+        x=val * 1.2,
+        y=0.5,  # Place the annotation slightly above the point
+        text=percentile_text,
+        showarrow=True,
+        arrowhead=2,
+        ax=0,
+        ay=-10,
+        font=dict(
+            color="rgb(174, 177, 210)",
+            size=12,
+        ),
+    )
 
     # Update layout to remove axis titles and values, and adjust appearance
     fig.update_layout(
         xaxis=dict(visible=False),
         yaxis=dict(visible=False),
         showlegend=False,
-        margin=dict(l=100, r=100, t=20, b=0),
+        margin=dict(l=100, r=100, t=0, b=0),
         height=60,
         paper_bgcolor="rgb(35, 36, 72)",
         plot_bgcolor="rgb(35, 36, 72)",
     )
 
     # Return the chart and the rank percentile as a message
-    percentile_text = f"{rank_percentile:.0f}th% observed change"
+    percentile_text = f"{rank_percentile:.0f}th percentile"
 
     return fig, percentile_text
 
@@ -431,10 +497,6 @@ layout = html.Div(
                                             id="box-curr-lossRatio",
                                             config={"displayModeBar": False},
                                         ),
-                                        html.Div(
-                                            id="box-msg-curr-lossRatio",
-                                            className="title box",
-                                        ),
                                     ],
                                     className="data-card-primary",
                                 ),
@@ -449,13 +511,15 @@ layout = html.Div(
                                                     id="curr-claim",
                                                     config={"displayModeBar": False},
                                                 ),
-                                                dcc.Graph(
-                                                    id="box-curr-claim",
-                                                    config={"displayModeBar": False},
-                                                ),
                                                 html.Div(
-                                                    id="box-msg-curr-claim",
-                                                    className="title box",
+                                                    [
+                                                        dcc.Graph(
+                                                            id="box-curr-claim",
+                                                            config={
+                                                                "displayModeBar": False
+                                                            },
+                                                        ),
+                                                    ]
                                                 ),
                                             ],
                                             className="data-card-primary",
@@ -474,9 +538,60 @@ layout = html.Div(
                                                     id="box-curr-cont",
                                                     config={"displayModeBar": False},
                                                 ),
+                                            ],
+                                            className="data-card-primary",
+                                        ),
+                                    ],
+                                    className="container-flex-col",
+                                ),
+                            ],
+                            className="container-flex-row",
+                        ),
+                        html.Div(
+                            [
+                                html.Div(
+                                    [
+                                        html.Div(
+                                            "Projected loss ratio", className="title"
+                                        ),
+                                        dcc.Graph(
+                                            id="fan-chart",
+                                        ),
+                                    ],
+                                    className="data-card-primary",
+                                ),
+                                html.Div(
+                                    [
+                                        html.Div(
+                                            [
                                                 html.Div(
-                                                    id="box-msg-curr-cont",
-                                                    className="title box",
+                                                    "Number of Claims",
+                                                    className="title",
+                                                ),
+                                                dcc.Graph(
+                                                    id="num-claim",
+                                                    config={"displayModeBar": False},
+                                                ),
+                                                dcc.Graph(
+                                                    id="box-curr-num-claim",
+                                                    config={"displayModeBar": False},
+                                                ),
+                                            ],
+                                            className="data-card-primary",
+                                        ),
+                                        html.Div(
+                                            [
+                                                html.Div(
+                                                    "Average Claim Size",
+                                                    className="title",
+                                                ),
+                                                dcc.Graph(
+                                                    id="avg-curr-claim",
+                                                    config={"displayModeBar": False},
+                                                ),
+                                                dcc.Graph(
+                                                    id="box-curr-avg-claim",
+                                                    config={"displayModeBar": False},
                                                 ),
                                             ],
                                             className="data-card-primary",
@@ -497,28 +612,12 @@ layout = html.Div(
                             [
                                 html.Div(
                                     [
-                                        dcc.Graph(
-                                            id="overview-fan-chart",
-                                        ),
-                                    ],
-                                    className="data-card-primary",
-                                ),
-                                html.Div(
-                                    [
-                                        html.Div(
-                                            id="overview-num-lives",
-                                            className="data-value-primary",
-                                        ),
                                         html.Div("Number of Lives", className="title"),
                                     ],
                                     className="data-card-primary",
                                 ),
                                 html.Div(
                                     [
-                                        dcc.Graph(
-                                            id="overview-avg-claim",
-                                            config={"displayModeBar": False},
-                                        ),
                                         html.Div(
                                             "Average Claim Size", className="title"
                                         ),
@@ -569,49 +668,62 @@ layout = html.Div(
 
 @dash.callback(
     [
+        # all loss ratios
         Output("curr-lossRatio", "figure"),
         Output("bullet-curr-lossRatio", "figure"),
         Output("box-curr-lossRatio", "figure"),
-        Output("box-msg-curr-lossRatio", "children"),
+        # all contribution
         Output("curr-cont", "figure"),
         Output("box-curr-cont", "figure"),
-        Output("box-msg-curr-cont", "children"),
+        # all claims
         Output("curr-claim", "figure"),
         Output("box-curr-claim", "figure"),
-        Output("box-msg-curr-claim", "children"),
-        Output("overview-num-lives", "children"),
-        Output("overview-avg-claim", "figure"),
+        # all number of claims
+        Output("num-claim", "figure"),
+        Output("box-curr-num-claim", "figure"),
+        # all average claims
+        Output("avg-curr-claim", "figure"),
+        Output("box-curr-avg-claim", "figure"),
+        # all others
         Output("overview-reprice-date", "children"),
         Output("overview-reprice-mnths", "children"),
-        Output("overview-fan-chart", "figure"),
+        Output("fan-chart", "figure"),
     ],
     [Input("overview-selected-product-dropdown", "value")],
 )
 def update_data(selected_product):
-    if selected_product is None:
-        # Default to "All" product
-        product_name = "All"
-    else:
-        # Get the product name from the clicked point
-        product_name = selected_product
 
-    # Filter the data for the selected product
-    selected_data_curr = data_table_curr[data_table_curr["Product"] == product_name]
-    selected_data_prev = data_table_prev[data_table_curr["Product"] == product_name]
+    # get all medical product data
+    (
+        current_lossRatio,
+        current_claim,
+        current_cont,
+        prev_lossRatio,
+        prev_cont,
+        prev_claim,
+        current_num_claim,
+        current_avg_claim,
+        prev_num_claim,
+        prev_avg_claim,
+        reprice_mnths,
+        reprice_date,
+    ) = get_data("All")
 
-    # Loss ratio data
-    current_cont = selected_data_curr.iloc[0]["Net Contribution"]
-    prev_cont = selected_data_prev.iloc[0]["Net Contribution"]
-    current_claim = selected_data_curr.iloc[0]["Incurred Claim"]
-    prev_claim = selected_data_prev.iloc[0]["Incurred Claim"]
-
-    current_lossRatio = current_claim / current_cont
-    prev_lossRatio = prev_claim / prev_cont
-
-    num_lives = selected_data_curr.iloc[0]["Number of Lives"]
-    avg_claim = selected_data_curr.iloc[0]["Average Claim Size"]
-    reprice_date = selected_data_curr.iloc[0]["Last Reprice Date"]
-    reprice_mnths = selected_data_curr.iloc[0]["Mths Since Reprice"]
+    # get all medical product data
+    (
+        selected_current_lossRatio,
+        selected_current_claim,
+        selected_current_cont,
+        selected_prev_lossRatio,
+        selected_prev_cont,
+        selected_prev_claim,
+        selected_current_num_claim,
+        selected_current_avg_claim,
+        selected_prev_num_claim,
+        selected_prev_avg_claim,
+        selected_reprice_mnths,
+        selected_reprice_date,
+    ) = get_data(selected_product)
 
     # Delta cards
     ind_current_lossRatio = create_delta_card(
@@ -628,10 +740,12 @@ def update_data(selected_product):
     ind_curr_cont = create_delta_card(
         current_cont / 1_000_000, prev_cont / 1_000_000, ".1f", "m", "income"
     )
-    ind_avg_claim = create_delta_card(avg_claim, 200, ".1f", "", "outgo")
-
-    # Format values
-    formatted_num_lives = f"{int(num_lives):,}"
+    ind_curr_avg_claim = create_delta_card(
+        current_avg_claim, prev_avg_claim, ".1f", "", "outgo"
+    )
+    ind_curr_num_claim = create_delta_card(
+        current_num_claim, prev_num_claim, ",.0f", "", "outgo"
+    )
 
     # Check if reprice_date is a string (blank or 'NA')
     if (
@@ -656,11 +770,11 @@ def update_data(selected_product):
         )
 
     # box plot
-    box_curr_lossRatio, box_msg_lossRatio = create_box(
-        (current_lossRatio - prev_lossRatio) * 100
-    )
-    box_curr_claim, box_msg_claim = create_box((current_claim - prev_claim) / 1_000_000)
-    box_curr_cont, box_msg_cont = create_box((current_cont - prev_cont) / 1_000_000)
+    box_curr_lossRatio, _ = create_box((current_lossRatio - prev_lossRatio) * 100)
+    box_curr_claim, _ = create_box((current_claim - prev_claim) / 1_000_000)
+    box_curr_cont, _ = create_box((current_cont - prev_cont) / 1_000_000)
+    box_curr_num_claim, _ = create_box((current_num_claim - prev_num_claim) / 1_000_000)
+    box_curr_avg_claim, _ = create_box((current_avg_claim - prev_avg_claim) / 1_000_000)
 
     # bullet chart
     bullet_curr_loss_ratio = create_bullet(current_lossRatio)
@@ -669,18 +783,23 @@ def update_data(selected_product):
     fan_chart = create_fan()
 
     return (
+        # all loss ratios
         ind_current_lossRatio,
         bullet_curr_loss_ratio,
         box_curr_lossRatio,
-        box_msg_lossRatio,
+        # all contributions
         ind_curr_cont,
         box_curr_cont,
-        box_msg_cont,
+        # all claims
         ind_curr_claim,
         box_curr_claim,
-        box_msg_claim,
-        formatted_num_lives,
-        ind_avg_claim,
+        # all num of claims
+        ind_curr_num_claim,
+        box_curr_num_claim,
+        # all average claim
+        ind_curr_avg_claim,
+        box_curr_avg_claim,
+        # all others
         formatted_reprice_date,
         formatted_reprice_mnths,
         fan_chart,
