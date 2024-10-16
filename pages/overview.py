@@ -474,6 +474,7 @@ layout = html.Div(
             ],
             className="header",
         ),
+        html.Div("Medical Loss Ratio", className="title page"),
         # Content section
         html.Div(
             [

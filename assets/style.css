@@ -103,7 +103,7 @@ body {
   /* grid-template-columns: 1fr 1fr;
   gap: 16px; */
   height: calc(100vh - 170px);
-  margin: 15px 15px;
+  margin: 0px 0px;
 }
 
 .content-left,
@@ -192,6 +192,12 @@ body {
   color: var(--text-data-color);
 }
 
-.title.box {
-  margin-top: 5px;
+.title.page {
+  /*for page title */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 15px 0px 0px 0px;
 }
