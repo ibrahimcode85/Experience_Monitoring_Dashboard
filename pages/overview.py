@@ -61,11 +61,10 @@ def get_data(products="All"):
     )
 
 
-def create_dropdown():
-    dropdown = dcc.Dropdown(
-        id="overview-selected-product-dropdown",  # Assign an ID to the dropdown
+def create_dropdown(drop_for):
+    dropdown_product = dcc.Dropdown(
+        id="selected-product",
         options=[
-            {"label": "All Medical", "value": "All"},
             {"label": "Medi A", "value": "Medi A"},
             {"label": "Medi B", "value": "Medi B"},
             {"label": "Medi C", "value": "Medi C"},
@@ -73,13 +72,35 @@ def create_dropdown():
         ],
         value="Medi A",
         placeholder="Select Product...",
-        className="selected-product-dropdown",  # Optional: apply CSS class
+        className="selected-product-dropdown",
         style={
-            "background-color": "rgb(35, 36, 72)",  # Custom background color
-            "border": "1px solid rgb(35, 36, 72)",  # Border style
-            "border-radius": "5px",  # Rounded corners
+            # "background-color": "rgb(35, 36, 72)",
+            # "border": "1px solid rgb(35, 36, 72)",
+            # "border-radius": "5px",
         },
     )
+
+    dropdown_period = dcc.Dropdown(
+        id="selected-period",
+        options=[
+            {"label": "2023 Q1", "value": "23Q1"},
+            {"label": "2022 Q1", "value": "22Q1"},
+            {"label": "2021 Q1", "value": "21Q1"},
+        ],
+        value="23Q1",
+        placeholder="Select study period...",
+        className="selected-period-dropdown",
+        style={
+            # "background-color": "rgb(20, 22, 55)",
+            # "border": "2px solid rgb(35, 36, 72)",
+        },
+    )
+
+    if drop_for == "period":
+        dropdown = dropdown_period
+    else:
+        dropdown = dropdown_product
+
     return dropdown
 
 
@@ -191,7 +212,7 @@ def create_bullet(value):
     # Create a bullet chart using a bar to represent the current value
     fig = go.Figure(
         go.Indicator(
-            mode="gauge+delta",
+            mode="gauge",
             value=current_value,
             gauge={
                 "shape": "bullet",
@@ -264,7 +285,8 @@ def create_bullet(value):
 def create_box(val):
     # Generate random data with exponential distribution
     # np.random.seed(42)
-    data = np.random.exponential(scale=val, size=30)
+    # data = np.random.exponential(scale=val, size=30)
+    data = np.random.normal(loc=val, scale=abs(val * 0.2), size=30)
 
     # Add jitter to y-axis for better visibility
     jitter = np.random.normal(0, 0.1, len(data))
@@ -475,11 +497,22 @@ layout = html.Div(
             className="header",
         ),
         html.Div("Medical Loss Ratio", className="title page"),
+        html.Div(
+            [
+                create_dropdown("period"),
+                create_dropdown("product"),
+            ],
+            className="dropdown-container",
+        ),
         # Content section
         html.Div(
             [
                 html.Div(
                     [
+                        html.Div(
+                            "Overall Medical Portfolio:",
+                            className="data-card-primary title",
+                        ),
                         html.Div(
                             [
                                 html.Div(
@@ -608,50 +641,165 @@ layout = html.Div(
                 ),
                 html.Div(
                     [
-                        create_dropdown(),
                         html.Div(
                             [
                                 html.Div(
                                     [
-                                        html.Div("Number of Lives", className="title"),
-                                    ],
-                                    className="data-card-primary",
-                                ),
-                                html.Div(
-                                    [
                                         html.Div(
-                                            "Average Claim Size", className="title"
-                                        ),
-                                    ],
-                                    className="data-card-primary",
-                                ),
-                                html.Div(
-                                    [
-                                        html.Div(
-                                            id="overview-reprice-date",
-                                            className="data-value-primary",
-                                        ),
-                                        html.Div(
-                                            "Last Repricing Date", className="title"
-                                        ),
-                                    ],
-                                    className="data-card-primary",
-                                ),
-                                html.Div(
-                                    [
-                                        html.Div(
-                                            id="overview-reprice-mnths",
-                                            className="data-value-primary",
-                                        ),
-                                        html.Div(
-                                            "Months Since Last Reprice",
+                                            id="selected-product-display",
                                             className="title",
                                         ),
                                     ],
-                                    className="data-card-primary",
+                                    className="data-card-primary title",
+                                ),
+                                html.Div(
+                                    [
+                                        html.Div(
+                                            [
+                                                html.Div(
+                                                    "Current Loss Ratio",
+                                                    className="title",
+                                                ),
+                                                dcc.Graph(
+                                                    id="selected-curr-lossRatio",
+                                                    config={"displayModeBar": False},
+                                                ),
+                                                dcc.Graph(
+                                                    id="selected-bullet-curr-lossRatio",
+                                                ),
+                                                dcc.Graph(
+                                                    id="selected-box-curr-lossRatio",
+                                                    config={"displayModeBar": False},
+                                                ),
+                                            ],
+                                            className="data-card-primary",
+                                        ),
+                                        html.Div(
+                                            [
+                                                html.Div(
+                                                    [
+                                                        html.Div(
+                                                            "Incurred Claims",
+                                                            className="title",
+                                                        ),
+                                                        dcc.Graph(
+                                                            id="selected-curr-claim",
+                                                            config={
+                                                                "displayModeBar": False
+                                                            },
+                                                        ),
+                                                        html.Div(
+                                                            [
+                                                                dcc.Graph(
+                                                                    id="selected-box-curr-claim",
+                                                                    config={
+                                                                        "displayModeBar": False
+                                                                    },
+                                                                ),
+                                                            ]
+                                                        ),
+                                                    ],
+                                                    className="data-card-primary",
+                                                ),
+                                                html.Div(
+                                                    [
+                                                        html.Div(
+                                                            "Net Contribution",
+                                                            className="title",
+                                                        ),
+                                                        dcc.Graph(
+                                                            id="selected-curr-cont",
+                                                            config={
+                                                                "displayModeBar": False
+                                                            },
+                                                        ),
+                                                        dcc.Graph(
+                                                            id="selected-box-curr-cont",
+                                                            config={
+                                                                "displayModeBar": False
+                                                            },
+                                                        ),
+                                                    ],
+                                                    className="data-card-primary",
+                                                ),
+                                            ],
+                                            className="container-flex-col",
+                                        ),
+                                    ],
+                                    className="container-flex-row",
+                                ),
+                                html.Div(
+                                    [
+                                        html.Div(
+                                            [
+                                                html.Div(
+                                                    "Number of Claims",
+                                                    className="title",
+                                                ),
+                                                dcc.Graph(
+                                                    id="selected-num-claim",
+                                                    config={"displayModeBar": False},
+                                                ),
+                                                dcc.Graph(
+                                                    id="selected-box-curr-num-claim",
+                                                    config={"displayModeBar": False},
+                                                ),
+                                            ],
+                                            className="data-card-primary",
+                                        ),
+                                        html.Div(
+                                            [
+                                                html.Div(
+                                                    "Average Claim Size",
+                                                    className="title",
+                                                ),
+                                                dcc.Graph(
+                                                    id="selected-avg-curr-claim",
+                                                    config={"displayModeBar": False},
+                                                ),
+                                                dcc.Graph(
+                                                    id="selected-box-curr-avg-claim",
+                                                    config={"displayModeBar": False},
+                                                ),
+                                            ],
+                                            className="data-card-primary",
+                                        ),
+                                    ],
+                                    className="container-flex-row",
+                                ),
+                                html.Div(
+                                    [
+                                        html.Div(
+                                            [
+                                                html.Div(
+                                                    id="overview-reprice-date",
+                                                    className="data-value-primary",
+                                                ),
+                                                html.Div(
+                                                    "Last Repricing Date",
+                                                    className="title",
+                                                ),
+                                            ],
+                                            className="data-card-primary",
+                                        ),
+                                        html.Div(
+                                            [
+                                                html.Div(
+                                                    id="overview-reprice-mnths",
+                                                    className="data-value-primary",
+                                                ),
+                                                html.Div(
+                                                    "Months Since Last Reprice",
+                                                    className="title",
+                                                ),
+                                            ],
+                                            className="data-card-primary",
+                                        ),
+                                    ],
+                                    className="container-flex-row",
                                 ),
                             ],
-                            id="data-container",
+                            id="container-flex-col",
                         ),
                     ],
                     className="content-right",
@@ -689,8 +837,26 @@ layout = html.Div(
         Output("overview-reprice-date", "children"),
         Output("overview-reprice-mnths", "children"),
         Output("fan-chart", "figure"),
+        # selected product display
+        Output("selected-product-display", "children"),
+        # selected loss ratios
+        Output("selected-curr-lossRatio", "figure"),
+        Output("selected-bullet-curr-lossRatio", "figure"),
+        Output("selected-box-curr-lossRatio", "figure"),
+        # selected contribution
+        Output("selected-curr-cont", "figure"),
+        Output("selected-box-curr-cont", "figure"),
+        # selected claims
+        Output("selected-curr-claim", "figure"),
+        Output("selected-box-curr-claim", "figure"),
+        # selected number of claims
+        Output("selected-num-claim", "figure"),
+        Output("selected-box-curr-num-claim", "figure"),
+        # selected average claims
+        Output("selected-avg-curr-claim", "figure"),
+        Output("selected-box-curr-avg-claim", "figure"),
     ],
-    [Input("overview-selected-product-dropdown", "value")],
+    [Input("selected-product", "value")],
 )
 def update_data(selected_product):
 
@@ -726,7 +892,7 @@ def update_data(selected_product):
         selected_reprice_date,
     ) = get_data(selected_product)
 
-    # Delta cards
+    # Delta cards - all
     ind_current_lossRatio = create_delta_card(
         current_lossRatio * 100,
         prev_lossRatio * 100,
@@ -746,6 +912,36 @@ def update_data(selected_product):
     )
     ind_curr_num_claim = create_delta_card(
         current_num_claim, prev_num_claim, ",.0f", "", "outgo"
+    )
+
+    # Delta cards - selected
+    ind_selected_current_lossRatio = create_delta_card(
+        selected_current_lossRatio * 100,
+        selected_prev_lossRatio * 100,
+        ".1f",
+        "%",
+        "outgo",
+        "medium",
+    )
+    ind_selected_curr_claim = create_delta_card(
+        selected_current_claim / 1_000_000,
+        selected_prev_claim / 1_000_000,
+        ".1f",
+        "m",
+        "outgo",
+    )
+    ind_selected_curr_cont = create_delta_card(
+        selected_current_cont / 1_000_000,
+        selected_prev_cont / 1_000_000,
+        ".1f",
+        "m",
+        "income",
+    )
+    ind_selected_curr_avg_claim = create_delta_card(
+        selected_current_avg_claim, selected_prev_avg_claim, ".1f", "", "outgo"
+    )
+    ind_selected_curr_num_claim = create_delta_card(
+        selected_current_num_claim, selected_prev_num_claim, ",.0f", "", "outgo"
     )
 
     # Check if reprice_date is a string (blank or 'NA')
@@ -770,18 +966,39 @@ def update_data(selected_product):
             f"{int(reprice_mnths)}"  # Format as integer with no decimal points
         )
 
-    # box plot
+    # box plot - all
     box_curr_lossRatio, _ = create_box((current_lossRatio - prev_lossRatio) * 100)
     box_curr_claim, _ = create_box((current_claim - prev_claim) / 1_000_000)
     box_curr_cont, _ = create_box((current_cont - prev_cont) / 1_000_000)
     box_curr_num_claim, _ = create_box((current_num_claim - prev_num_claim) / 1_000_000)
     box_curr_avg_claim, _ = create_box((current_avg_claim - prev_avg_claim) / 1_000_000)
 
+    # box plot - selected
+    box_selected_curr_lossRatio, _ = create_box(
+        (selected_current_lossRatio - selected_prev_lossRatio) * 100
+    )
+    box_selected_curr_claim, _ = create_box(
+        (selected_current_claim - selected_prev_claim) / 1_000_000
+    )
+    box_selected_curr_cont, _ = create_box(
+        (selected_current_cont - selected_prev_cont) / 1_000_000
+    )
+    box_selected_curr_num_claim, _ = create_box(
+        (selected_current_num_claim - selected_prev_num_claim) / 1_000_000
+    )
+    box_selected_curr_avg_claim, _ = create_box(
+        (selected_current_avg_claim - selected_prev_avg_claim) / 1_000_000
+    )
+
     # bullet chart
     bullet_curr_loss_ratio = create_bullet(current_lossRatio)
+    bullet_selected_curr_loss_ratio = create_bullet(selected_current_lossRatio)
 
     # fan chart
     fan_chart = create_fan()
+
+    # product title
+    product_title = f"{selected_product} Product:"
 
     return (
         # all loss ratios
@@ -804,4 +1021,21 @@ def update_data(selected_product):
         formatted_reprice_date,
         formatted_reprice_mnths,
         fan_chart,
+        product_title,
+        # selected loss ratios
+        ind_selected_current_lossRatio,
+        bullet_selected_curr_loss_ratio,
+        box_selected_curr_lossRatio,
+        # selected contributions
+        ind_selected_curr_cont,
+        box_selected_curr_cont,
+        # selected claims
+        ind_selected_curr_claim,
+        box_selected_curr_claim,
+        # all num of claims
+        ind_selected_curr_num_claim,
+        box_selected_curr_num_claim,
+        # all average claim
+        ind_selected_curr_avg_claim,
+        box_selected_curr_avg_claim,
     )
