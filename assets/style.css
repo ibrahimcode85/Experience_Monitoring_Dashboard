@@ -108,7 +108,7 @@ body {
 
 .content-left,
 .content-right {
-  padding: 15px 15px;
+  padding: 15px 0px 0px 0px;
   width: 50%;
 }
 
@@ -118,33 +118,36 @@ body {
   flex-direction: column;
 }
 
-.container-flex-col > .data-card-primary {
-  margin: 0px 0px 15px 0px;
-}
-
 .container-flex-row {
   display: flex;
 }
 
 .container-flex-row > .data-card-primary {
   flex: 1;
-  margin: 0px 15px 15px 0px;
 }
 
+.dropdown-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.selected-period-dropdown,
 .selected-product-dropdown {
-  /*this will style the dropdown text as it will inherit font property from this wrapper*/
-  border-radius: 5px;
-  padding: 10px;
-  text-align: center;
+  width: 125px;
+  margin: 10px;
+  font-size: 0.9rem;
   color: black;
-  font-family: var(--font-family);
 }
 
-.has-value.Select--single > .Select-control .Select-value .Select-value-label {
-  background-color: var(--section-bg-color);
+.has-value.Select--single > .Select-control .Select-value .Select-value-label,
+.has-value.is-pseudo-focused.Select--single
+  > .Select-control
+  .Select-value
+  .Select-value-label {
+  /* background-color: var(--section-bg-color); */
   font-family: var(--font-family);
-  font-size: 1.5rem;
-  color: var(--text-primary-color);
+  font-size: 0.9rem;
+  /* color: var(--text-primary-color); */
 }
 
 #data-container {
@@ -167,6 +170,18 @@ body {
   text-align: center;
   font-family: var(--font-family); /* Use the font defined in your CSS */
   font-size: 1rem; /* Adjust font size as needed */
+  margin: 10px;
+}
+
+.data-card-primary.title {
+  background-color: var(--main-bg-color);
+  text-align: left;
+  font-size: 1.5rem;
+  padding: 0px 0px 5px 0px;
+  margin: 0px 0px 0px 15px;
+  border-radius: 0px;
+  /* border-bottom: 1px solid var(--theme-color); */
+  color: var(--theme-color);
 }
 
 .data-card-secondary {
@@ -181,7 +196,7 @@ body {
 }
 .data-value-primary {
   padding: 5px 10px;
-  font-size: 3rem;
+  font-size: 2rem;
   color: var(--text-data-color);
   font-weight: bold;
 }
